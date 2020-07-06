@@ -1,27 +1,65 @@
 apply plugin: 'maven-publish'
-group "com.sivakumarc.android"
-version 1.0
+apply plugin: 'com.jfrog.bintray'
+
+version '1.0' // your library version
+def lib_group = "com.MutliFlavor"
+def lib_name = "MutliFlavor"
+def lib_version = "1.1"
 
 publishing {
     publications {
         Production(MavenPublication) {
-            artifact("$buildDir/outputs/aar/mylibrary-flavor1-release.aar") {
+            artifact("$buildDir/outputs/aar/app-flavor1-release.aar") {
                 classifier 'flavor1'
                 extension 'aar'
             }
-            artifact("$buildDir/outputs/aar/mylibrary-flavor2-release.aar") {
+            artifact("$buildDir/outputs/aar/app-flavor2-release.aar") {
                 classifier 'flavor2'
                 extension 'aar'
             }
-        }
-    }
-    repositories {
-        maven {
-            url getSnapshotRepositoryUrl()
-            credentials {
-                username = "NEXUS_USER_NAME"
-                password = "NEXUS_USER_PASSWORD"
+            // replace with your library name
+            groupId lib_group
+            artifactId "MutliFlavor" // replace with your library artifact id
+            version lib_version
+
+            pom.withXml {
+                def dependenciesNode = asNode().appendNode('dependencies')
+
+                // Iterate over the implementation dependencies (we don't want the test ones),
+                // adding a <dependency> node for each
+                configurations.implementation.allDependencies.each {
+                    // Ensure dependencies such as fileTree are not included in the pom.
+                    if (it.name != 'unspecified') {
+                        def dependencyNode = dependenciesNode.appendNode('dependency')
+                        dependencyNode.appendNode('groupId', it.group)
+                        dependencyNode.appendNode('artifactId', it.name)
+                        dependencyNode.appendNode('version', it.version)
+                    }
+                }
             }
         }
     }
 }
+bintray {
+    user = "asmaamosa"
+    key = "62bf353080be5bf5d0e95da29b7409c0a869fda6"
+    publications = ['Production']
+    configurations = ['archives']
+    override = true
+    pkg {
+        repo = 'MutliFlavorLib'
+        name = 'com.example.multiflavorlibrary'
+        description = "It's an awesome lib"
+        publicDownloadNumbers = true
+        licenses = ['Apache-2.0']
+        vcsUrl = 'https://github.com/AsmaaMosa/MultiFlavorLibrary.git'
+        version {
+            name = this.version
+            desc = "Version ${this.version}"
+            released = new Date()
+            vcsTag = this.version
+        }
+    }
+}
+
+
